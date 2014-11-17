@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 /* https://docs.oracle.com/javase/7/docs/platform/jvmti/jvmti.html#IterateThroughHeap */
 /* https://docs.oracle.com/javase/7/docs/platform/jvmti/jvmti.html#onload */
@@ -16,7 +17,7 @@ bool checkLuhn(const jchar* value, jint value_length) {
     for (int i = 0; i < 16 ; ++i) {
         jchar digit = value[i];
         int value;
-        if (value < '0' | value > '9') {
+        if (digit < '0' | digit > '9') {
             return false;
         }
         value = digit - '0';
@@ -60,7 +61,7 @@ JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved)
         return -1;
     }
     
-    (*vm)->GetEnv( (void**)&env, JNI_VERSION_1_2 );
+    (*vm)->GetEnv(vm, (void**)&env, JNI_VERSION_1_2 );
     
     stringClass = (*env)->FindClass(env, "java/lang/String");
     if (stringClass == NULL) {
