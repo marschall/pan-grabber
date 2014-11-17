@@ -72,8 +72,11 @@ JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved)
     
     stringClass = (*env)->FindClass(env, "java/lang/String");
     if (stringClass == NULL) {
-        // TODO check for exception
         fprintf(stderr, "Can't find String class\n");
+        return -1;
+    }
+    if ((*env)->ExceptionCheck(env) == JNI_TRUE ) {
+        fprintf(stderr, "Exception while looking up String class\n");
         return -1;
     }
     
