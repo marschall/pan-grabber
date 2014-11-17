@@ -61,7 +61,14 @@ JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved)
         return -1;
     }
     
-    (*vm)->GetEnv(vm, (void**)&env, JNI_VERSION_1_2 );
+    /* https://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/functions.html#wp23721 */
+    /* typedef const struct JNINativeInterface *JNIEnv; */
+    /* https://docs.oracle.com/javase/8/docs/platform/jvmti/jvmti.html#jniNativeInterface */
+    /* typedef struct JNINativeInterface_ jniNativeInterface; */
+    if ((*jvmti)->GetJNIFunctionTable(jvmti, (jniNativeInterface**)&env) != JVMTI_ERROR_NONE) {
+        fprintf(stderr,"GetJNIFunctionTable failed.\n");
+        return -1;
+    }
     
     stringClass = (*env)->FindClass(env, "java/lang/String");
     if (stringClass == NULL) {
