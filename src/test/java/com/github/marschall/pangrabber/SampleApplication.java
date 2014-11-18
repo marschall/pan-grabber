@@ -11,6 +11,8 @@ public class SampleApplication {
     String[] panArray = {"5277753060160834", "5265084775874053", "5304830015633045"};
     String dynamicPan = "559935969757" + "7498";
     Console console = System.console();
+    console.writer().println("sample application holind PANs in memory");
+    console.writer().println("blocking for input...");
     console.readLine();
   }
 
