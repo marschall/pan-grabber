@@ -51,7 +51,7 @@ jint JNICALL StringPrimitiveValueCallback(jlong class_tag,  jlong size,
             pan_buffer[i] = (char) value[i];
         }
         pan_buffer[16] = 0;
-        printf("%s\n", pan_buffer);
+        puts(pan_buffer);
     }
     return JVMTI_VISIT_OBJECTS;
 }
@@ -72,6 +72,7 @@ JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved)
     jvmtiEnv* jvmti;
     jvmtiCapabilities capabilities;
     /* JNIEnv* env; */
+    /* JNIEnv env; */
     jvmtiHeapCallbacks callbacks;
     /* jclass stringClass; */
     jvmtiError tiError;
@@ -98,19 +99,19 @@ JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved)
     
     /*
     printf("GetJNIFunctionTable\n");
-    if ((*jvmti)->GetJNIFunctionTable(jvmti, (jniNativeInterface**)&env) != JVMTI_ERROR_NONE) {
+    if ((*jvmti)->GetJNIFunctionTable(jvmti, (jniNativeInterface**) &env) != JVMTI_ERROR_NONE) {
         fprintf(stderr,"GetJNIFunctionTable failed.\n");
         return -1;
     }
     
     printf("FindClass\n");
-    stringClass = (*env)->FindClass(env, "java/lang/String");
+    stringClass = env->FindClass(&env, "java/lang/String");
     if (stringClass == NULL) {
         fprintf(stderr, "Can't find String class\n");
         return -1;
     }
     printf("ExceptionCheck\n");
-    if ((*env)->ExceptionCheck(env) == JNI_TRUE ) {
+    if (env.ExceptionCheck(&env) == JNI_TRUE ) {
         fprintf(stderr, "Exception while looking up String class\n");
         return -1;
     }
@@ -119,7 +120,6 @@ JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved)
     memset(&callbacks, 0, sizeof(callbacks));
     callbacks.string_primitive_value_callback = StringPrimitiveValueCallback;
     
-    /* if((*jvmti)->IterateThroughHeap(jvmti, 0, stringClass, &callbacks, (void*) NULL) != JVMTI_ERROR_NONE) { */
     tiError = (*jvmti)->IterateThroughHeap(jvmti, 0, NULL, &callbacks, (void*) NULL);
     relinquish_capabilities(jvmti, &capabilities);
     if(tiError != JVMTI_ERROR_NONE) {
