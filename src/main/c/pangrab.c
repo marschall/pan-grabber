@@ -55,10 +55,15 @@ jint JNICALL StringPrimitiveValueCallback(jlong class_tag,  jlong size,
         pan_buffer[17] = '\n';
         pan_buffer[18] = 0;
         fp = user_data;
-        if (fputs(pan_buffer, fp) == EOF) {
-            fprintf(stderr, "Failed to write PAN\n");
+        
+        if (fp != NULL) {
+            if (fputs(pan_buffer, fp) == EOF) {
+                fprintf(stderr, "Failed to write PAN\n");
+            }
+        } else {
+            pan_buffer[16] = 0;
+            puts(pan_buffer);
         }
-        /* puts(pan_buffer); */
     }
     return JVMTI_VISIT_OBJECTS;
 }
@@ -133,16 +138,24 @@ JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved)
     jint result;
     char *filename;
     
+    printf("fopen%s\n", options);
     filename = options;
-    fp = fopen(filename, "a");
-    if (fp == NULL) {
-        fprintf(stderr,"Failed to open file %s\n", filename);
-        return -1;
+    if (filename != NULL) {
+        fp = fopen(filename, "a");
+        if (fp == NULL) {
+            fprintf(stderr,"Failed to open file %s\n", filename);
+            return -1;
+        }
+    } else {
+        fp = NULL;
     }
     
+    printf("grap_pans\n");
     result = grap_pans(vm, fp);
-    if (fclose(fp) != 0) {
-        fprintf(stderr,"Failed to close file %s\n", filename);
+    if (filename != NULL) {
+        if (fclose(fp) != 0) {
+            fprintf(stderr,"Failed to close file %s\n", filename);
+        }
     }
     
     return result;
