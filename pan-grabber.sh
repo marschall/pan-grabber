@@ -8,4 +8,4 @@ if [ not $AGENT_PATH ]; then
   AGENT_PATH=`find target/ -name "*.jnilib"`
 fi
 
-$JAVA_HOME/bin/java -cp $JAVA_HOME/lib/tools.jar:$PAN_GRABBER_JAR_FILE com.github.marschall.pangrabber.Attacher -a $AGENT_PATH
+$JAVA_HOME/bin/java -Xmx8m -Xss160k -cp $JAVA_HOME/lib/tools.jar:$PAN_GRABBER_JAR_FILE com.github.marschall.pangrabber.Attacher -a $AGENT_PATH

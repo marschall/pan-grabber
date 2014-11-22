@@ -1,3 +1,3 @@
 #!/bin/bash
 
-$JAVA_HOME/bin/java -cp target/test-classes/ com.github.marschall.pangrabber.SampleApplication
+$JAVA_HOME/bin/java -Xmx8m -Xss160k -cp target/test-classes/ com.github.marschall.pangrabber.SampleApplication
