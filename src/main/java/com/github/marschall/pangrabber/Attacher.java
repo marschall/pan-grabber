@@ -1,7 +1,15 @@
 package com.github.marschall.pangrabber;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.file.StandardOpenOption.WRITE;
+
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -11,11 +19,10 @@ import com.sun.tools.attach.AgentLoadException;
 import com.sun.tools.attach.AttachNotSupportedException;
 import com.sun.tools.attach.VirtualMachine;
 import com.sun.tools.attach.VirtualMachineDescriptor;
-import com.sun.tools.attach.spi.AttachProvider;
 
 public class Attacher {
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
     // https://github.com/giltene/jHiccup
     ExceptionCounterConfiguration configuration;
     try {
@@ -27,34 +34,61 @@ public class Attacher {
       return;
     }
 
+    List<VirtualMachineDescriptor> descriptors;
     try {
-      List<VirtualMachineDescriptor> descriptors;
+      descriptors = getVmDescriptors(configuration);
+    } catch (ConfigurationException e) {
+      System.err.println(e.getMessage());
+      System.exit(0);
+      return; // keep compiler happy
+    }
+    
+    Path channel = Paths.get("channel").toAbsolutePath();
+    try {
+      grabPansInVms(configuration, descriptors, channel);
+    } finally {
+      Files.deleteIfExists(channel);
+    }
+    System.exit(0);
+  }
+
+  public static void grabPansInVms(ExceptionCounterConfiguration configuration,
+      List<VirtualMachineDescriptor> descriptors, Path channel) {
+    for (VirtualMachineDescriptor descriptor : descriptors) {
       try {
-        descriptors = getVmDescriptors(configuration);
-      } catch (ConfigurationException e) {
-        System.err.println(e.getMessage());
-        System.exit(0);
-        return; // keep compiler happy
+        grabPansInVm(configuration, descriptor, channel);
+      } catch (AttachNotSupportedException | AgentLoadException | AgentInitializationException | IOException  e) {
+        System.err.println("failed to attach");
       }
-      for (VirtualMachineDescriptor descriptor : descriptors) {
-        // TODO check if provider suuports attaching
-        AttachProvider provider = descriptor.provider();
-        VirtualMachine vm = VirtualMachine.attach(descriptor);
-        Properties systemProperties = vm.getSystemProperties();
-        String javaCommand = systemProperties.getProperty("sun.java.command");
-        if (javaCommand != null && javaCommand.startsWith(Attacher.class.getName())) {
-          // don't attach to the current VM
-          // could also check pid
-          continue;
-        }
-        vm.loadAgentPath(configuration.agentPath);
-        vm.detach();
+    }
+  }
+
+  public static void grabPansInVm(ExceptionCounterConfiguration configuration,
+      VirtualMachineDescriptor descriptor, Path channel) throws AttachNotSupportedException,
+      IOException, AgentLoadException, AgentInitializationException {
+    if (Files.exists(channel)) {
+      try (SeekableByteChannel byteChannel = Files.newByteChannel(channel, WRITE)) {
+        byteChannel.truncate(0L);
       }
-      System.exit(0);
-    } catch (AttachNotSupportedException | AgentLoadException | AgentInitializationException | IOException  e) {
-      System.err.println("failed to attach");
-      e.printStackTrace(System.err);
-      System.exit(0);
+    } else {
+      Files.createFile(channel);
+    }
+    
+    // TODO check if provider supports attaching
+    VirtualMachine vm = VirtualMachine.attach(descriptor);
+    Properties systemProperties = vm.getSystemProperties();
+    String javaCommand = systemProperties.getProperty("sun.java.command");
+    if (javaCommand == null || javaCommand.startsWith(Attacher.class.getName())) {
+      return;
+    }
+    vm.loadAgentPath(configuration.agentPath, channel.toString());
+    vm.detach();
+    
+    try (BufferedReader reader = Files.newBufferedReader(channel, US_ASCII)) {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        System.out.println(line);
+      }
     }
   }
   
