@@ -7,7 +7,7 @@
   <version>0.1.0-SNAPSHOT</version>
   <packaging>nar</packaging>
   <name>PAN Grabber</name>
-  <description>Grabs PANs from a running Java application.</description>
+  <description>A JVM Agent that extracts PANs from running Java applications.</description>
   <inceptionYear>2014</inceptionYear>
 
   <prerequisites>
