@@ -37,4 +37,10 @@ Usage
  * compile the project with `mvn clean package`
  * optionally start a sample application with `sh sample-application.sh`
  * run `sh pan-grabber.sh`
- 
+
+Cost
+----
+
+The cost of [IterateThroughHeap](https://docs.oracle.com/javase/8/docs/platform/jvmti/jvmti.html#IterateThroughHeap) is quite high:
+
+> During the execution of this function the state of the heap does not change: no objects are allocated, no objects are garbage collected, and the state of objects (including held values) does not change. As a result, threads executing Java programming language code, threads attempting to resume the execution of Java programming language code, and threads attempting to execute JNI functions are typically stalled.
