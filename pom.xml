@@ -287,7 +287,7 @@
       </build>
     </profile>
     <profile>
-      <id>travic</id>
+      <id>travis</id>
       <activation>
         <!-- Travis is on gcc 4.6 -->
         <!-- http://docs.travis-ci.com/user/ci-environment/#Environment-variables -->
